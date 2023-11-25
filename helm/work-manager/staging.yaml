@@ -1,0 +1,25 @@
+environment: "staging"
+serviceAccountName: devstream-sa
+createIngress: false
+
+net:
+  host: "api-staging.devstream.dsgov.demo.nuvalence.io"
+
+env:
+  ALLOWED_ORIGINS: "http://localhost:4200, http://localhost:4201, https://api-staging.devstream.dsgov.demo.nuvalence.io, https://agency-staging.devstream.dsgov.demo.nuvalence.io, https://public-staging.devstream.dsgov.demo.nuvalence.io"
+  CERBOS_URI: "127.0.0.1:3592"
+  DB_CONNECTION_URL: "jdbc:postgresql://127.0.0.1:5432/devstream-staging-work-manager-db"
+  DB_USERNAME: "${sm://projects/devstream-staging/secrets/devstream-staging-db-user/versions/latest}"
+  DB_PASSWORD: "${sm://projects/devstream-staging/secrets/devstream-staging-db-pass/versions/latest}"
+  GCP_PROJECT_ID: "devstream-staging"
+  SELF_SIGN_PUBLIC_KEY: "${sm://projects/devstream-staging/secrets/devstream-self-signed-token-public-key/versions/latest}"
+  SELF_SIGN_PRIVATE_KEY: "${sm://projects/devstream-staging/secrets/devstream-self-signed-token-private-key/versions/latest}"
+  USER_MANAGEMENT_BASE_URL: "http://devstream-user-management/um"
+  DOCUMENT_MANAGEMENT_BASE_URL: "http://devstream-document-management/dm"
+  AUDIT_SERVICE_BASE_URL: "http://devstream-audit-service/as"
+  NOTIFICATION_SERVICE_BASE_URL: "http://devstream-notification-service/ns"
+  TOKEN_PRIVATE_KEY_SECRET: "devstream-self-signed-token-private-key"
+  TOKEN_ISSUER: "devstream"
+  TOKEN_PRIVATE_KEY_VERSION: "latest"
+  OTEL_SAMPLER_PROBABILITY: 1.0 # valid values: [0.0 - 1.0]
+  DASHBOARD_URL: "https://public-staging.devstream.dsgov.demo.nuvalence.io/dashboard"

@@ -1,0 +1,9 @@
+apiVersion: "api.cerbos.dev/v1"
+derived_roles:
+  name: transaction-roles
+  definitions:
+    - name: transaction-subject
+      parentRoles: ["transaction-submitter"]
+      condition:
+        match:
+          expr: request.resource.attr.subjectUserId == request.principal.id
