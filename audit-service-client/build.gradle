@@ -1,0 +1,44 @@
+plugins {
+    id 'java'
+    id 'org.openapi.generator'
+    id 'java-library'
+}
+
+sourceCompatibility = JavaVersion.VERSION_17
+targetCompatibility = JavaVersion.VERSION_17
+
+openApiGenerate {
+    generatorName = 'java'
+    configOptions = [library: 'native', java8: 'true', dateLibrary: 'java8', openApiNullable: 'false', useJakartaEe: 'true']
+    remoteInputSpec = project.property('audit-services.api-docs.url')
+    invokerPackage = "${group}.auditservice.client"
+    modelPackage = "${group}.auditservice.client.generated.models"
+    apiPackage = "${group}.auditservice.client.generated.api"
+}
+ext {
+    jackson_version = "2.15.2"
+    jakarta_annotation_version = "2.1.1"
+}
+
+dependencies {
+    api "com.fasterxml.jackson.core:jackson-core:$jackson_version"
+    api "com.fasterxml.jackson.core:jackson-annotations:$jackson_version"
+    api "com.fasterxml.jackson.core:jackson-databind:$jackson_version"
+    api "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jackson_version"
+    api "jakarta.annotation:jakarta.annotation-api:$jakarta_annotation_version"
+    api "com.google.code.findbugs:annotations:3.0.0"
+}
+
+task deleteExistingSources(type: Delete) {
+    delete fileTree("${projectDir}/src/main/java").matching {
+        include "**/*.java"
+    }
+}
+
+task updateWorkManagerClient(type: Copy, dependsOn: ['deleteExistingSources', 'openApiGenerate']) {
+    from "${buildDir}/generate-resources/main/src/main/java"
+    into "${projectDir}/src/main/java"
+    include('**/*.java')
+}
+
+tasks.register("prepareKotlinBuildScriptModel"){}

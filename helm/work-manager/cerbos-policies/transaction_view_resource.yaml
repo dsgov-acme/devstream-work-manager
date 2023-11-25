@@ -1,0 +1,10 @@
+# Indicates the ability to view a "view" of all transactions across users.
+apiVersion: api.cerbos.dev/v1
+resourcePolicy:
+  version: "default"
+  resource: transaction_view
+  rules:
+    - actions: ["view"]
+      roles:
+        - transaction-admin
+      effect: EFFECT_ALLOW

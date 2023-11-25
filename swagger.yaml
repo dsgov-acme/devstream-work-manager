@@ -1,0 +1,2452 @@
+openapi: "3.0.3"
+info:
+  version: 1.0.0
+  title: Work Manager
+  description: >-
+    Customizable work item manager that leverages Camunda workflows (BPMN and DMN), Form.io and customizable data types
+    to model online transaction processing.
+servers:
+  - url: /api/v1
+paths:
+  /admin/dashboards:
+    get:
+      summary: Get list of dashboards.
+      operationId: getDashboards
+      tags: [ 'Admin' ]
+      responses:
+        '200':
+          description: Collection of dashboards matching search criteria.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TransactionDefinitionSetDashboardResultModel'
+  /admin/dashboard-order:
+    get:
+      summary: Get dashboard order.
+      operationId: getDashboardOrder
+      tags: [ 'Admin' ]
+      responses:
+        '200':
+          description: Successfully retrieved dashboard order
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                  pattern: '^[a-zA-Z0-9]+$'
+    put:
+      summary: Updates dashboard order.
+      operationId: updateDashboardOrder
+      tags: [ 'Admin' ]
+      requestBody:
+        required: true
+        description: Order list of transaction definition set keys to update the ordered in which they should be shown.
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: string
+                pattern: '^[a-zA-Z0-9]+$'
+      responses:
+        '202':
+          description: Update request accepted.
+  /admin/dashboards/{transactionSetKey}:
+    get:
+      summary: Get a single dashboard by transaction set key.
+      operationId: getDashboardByTransactionSetKey
+      tags: [ 'Admin' ]
+      parameters:
+        - in: path
+          name: transactionSetKey
+          description: Unique transaction set key.
+          required: true
+          schema:
+            type: string
+            pattern: '^[a-zA-Z0-9]+$'
+      responses:
+        '200':
+          description: The requested dashboard.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionDefinitionSetDashboardResultModel'
+        '404':
+          description: A dashboard with the given key does not exist.
+  /admin/dashboards/{transactionSetKey}/counts:
+    get:
+      summary: Get dashboard counts per tab for a transaction definition set.
+      operationId: getTransactionDefinitionSetCounts
+      tags: [ 'Admin' ]
+      parameters:
+        - in: path
+          name: transactionSetKey
+          description: Unique transaction set key.
+          required: true
+          schema:
+            type: string
+            pattern: '^[a-zA-Z0-9]+$'
+      responses:
+        '200':
+          description: The requested dashboard counts.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DashboardCountsModel'
+        '404':
+          description: A set with the given key does not exist.
+  /admin/workflows:
+    get:
+      summary: Gets a paginated list of all workflows.
+      operationId: listWorkflows
+      tags: [ 'Admin' ]
+      parameters:
+        - $ref: "#/components/parameters/sortOrder"
+        - $ref: "#/components/parameters/pageNumber"
+        - $ref: "#/components/parameters/pageSize"
+      responses:
+        '200':
+          description: Collection of workflows matching search criteria.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagedWorkflowModel'
+  /admin/workflows/{processDefinitionKey}:
+    get:
+      summary: Gets a single workflow by key.
+      operationId: getWorkflowByProcessDefinitionKey
+      tags: [ 'Admin' ]
+      parameters:
+        - in: path
+          name: processDefinitionKey
+          description: Unique process key.
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The requested workflow.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkflowModel'
+        '404':
+          description: A workflow with the given key does not exist.
+  /admin/workflows/{processDefinitionKey}/tasks:
+    get:
+      summary: Gets a list of user tasks defined in a single workflow by processDefinitionKey.
+      operationId: getUsersTasksByProcessDefinitionKey
+      tags: [ 'Admin' ]
+      parameters:
+        - in: path
+          name: processDefinitionKey
+          description: Unique process key.
+          required: true
+          schema:
+            type: string
+            pattern: '^[a-zA-Z0-9]+$'
+      responses:
+        '200':
+          description: Collection of user tasks matching search criteria.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TaskModel'
+  /admin/schemas:
+    get:
+      summary: Get list of defined schemas with name matching a search string. Omitting search parameter will return all schemas.
+      operationId: getSchemas
+      tags: [ 'Admin' ]
+      parameters:
+        - in: query
+          name: name
+          description: Full or partial schema name for search.
+          required: false
+          schema:
+            type: string
+            pattern: '^(?!\\s*$).+'
+        - in: query
+          name: key
+          description: Full or partial schema key for search.
+          required: false
+          schema:
+            type: string
+            pattern: '^[a-zA-Z0-9]+$'
+        - $ref: "#/components/parameters/sortBySchema"
+        - $ref: "#/components/parameters/sortOrder"
+        - $ref: "#/components/parameters/pageNumber"
+        - $ref: "#/components/parameters/pageSize"
+      responses:
+        '200':
+          description: Collection of schemas matching search criteria.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagedSchemaModel'
+    post:
+      summary: Create a schema definition.
+      operationId: createSchema
+      tags: [ 'Admin' ]
+      requestBody:
+        description: Schema create definition.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SchemaCreateModel'
+      responses:
+        '200':
+          description: The created Schema
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaModel'
+        '403':
+          description: You are unauthorized to make this request
+        '409':
+          description: The schema for the given key already exists
+  /admin/schemas/{key}:
+    get:
+      summary: Get a single Schema whose key matches the path exactly.
+      operationId: getSchema
+      tags: [ 'Admin' ]
+      parameters:
+        - in: path
+          name: key
+          description: Key of schema to retrieve
+          required: true
+          schema:
+            type: string
+            pattern: '^[a-zA-Z0-9]+$'
+        - in: query
+          name: includeChildren
+          description: Flag to include children components. Default is false.
+          required: false
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: The requested Schema.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaModel'
+        '404':
+          description: A schema with the given key does not exist.
+    put:
+      summary: Update a schema definition.
+      operationId: updateSchema
+      tags: [ 'Admin' ]
+      parameters:
+        - in: path
+          name: key
+          description: Key of schema to update
+          required: true
+          schema:
+            type: string
+            pattern: '^[a-zA-Z0-9]+$'
+      requestBody:
+        description: Schema update definition.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SchemaUpdateModel'
+      responses:
+        '200':
+          description: The updated Schema
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaModel'
+        '403':
+          description: You are unauthorized to make this request
+        '404':
+          description: The schema for the given key does not exist
+    delete:
+      summary: deletes a schema definition.
+      operationId: deleteSchema
+      tags: [ 'Admin' ]
+      parameters:
+        - in: path
+          name: key
+          description: key of schema to be deleted
+          required: true
+          schema:
+            type: string
+            pattern: '^[a-zA-Z0-9]+$'
+      responses:
+        '200':
+          description: The schema definition was successfully deleted.
+        '404':
+          description: A schema with the given key does not exist or is already deleted.
+        '409':
+          description: A schema with the given key is being used and can not be deleted.
+  /admin/schemas/{key}/parents:
+    get:
+      summary: list all the parent schemas that have a relationship, directly or indirectly, with a given child schema key
+      operationId: getSchemaParents
+      tags: [ 'Admin' ]
+      parameters:
+        - name: key
+          in: path
+          required: true
+          description: The key of the child schema
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParentSchemas'
+        '404':
+          description: Child schema not found
+  /admin/transaction-sets:
+    get:
+      summary: Get list of transaction sets
+      operationId: getTransactionSets
+      tags: [ 'Admin' ]
+      parameters:
+        - $ref: "#/components/parameters/sortOrder"
+        - $ref: "#/components/parameters/pageNumber"
+        - $ref: "#/components/parameters/pageSize"
+      responses:
+        '200':
+          description: Collection of transaction sets.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagedTransactionDefinitionSetModel'
+    post:
+      summary: Create a new transaction set.
+      operationId: postTransactionSet
+      tags: [ 'Admin' ]
+      requestBody:
+        description: Transaction Set.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransactionDefinitionSetCreateModel'
+      responses:
+        '200':
+          description: The posted transaction set post-save. This will include assigned IDs for newly created transaction sets.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionDefinitionSetResponseModel'
+        '409':
+          description: A transaction definition set with the given key already exists.
+  /admin/transaction-sets/{key}:
+    get:
+      summary: Get a single transaction set by Key.
+      operationId: getTransactionSet
+      tags: [ 'Admin' ]
+      parameters:
+        - in: path
+          name: key
+          description: key of transaction set to retrieve
+          required: true
+          schema:
+            type: string
+            pattern: '^[a-zA-Z0-9]+$'
+      responses:
+        '200':
+          description: The requested transaction set.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionDefinitionSetResponseModel'
+        '404':
+          description: A transaction set with the given key does not exist.
+    put:
+      summary: Update a transaction set.
+      operationId: putTransactionSet
+      tags: [ 'Admin' ]
+      parameters:
+        - in: path
+          name: key
+          description: key of transaction set to create or update
+          required: true
+          schema:
+            type: string
+            pattern: '^[a-zA-Z0-9]+$'
+      requestBody:
+        description: Transaction Set.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransactionDefinitionSetUpdateModel'
+      responses:
+        '200':
+          description: The saved transaction set post-save. This will include assigned IDs for newly created transaction sets.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionDefinitionSetResponseModel'
+        '404':
+          description: The transaction definition set with the given key does exists.
+    delete:
+      summary: Deletes a transaction set.
+      operationId: deleteTransactionSet
+      tags: [ 'Admin' ]
+      parameters:
+        - in: path
+          name: key
+          description: key of transaction set to delete
+          required: true
+          schema:
+            type: string
+            pattern: '^[a-zA-Z0-9]+$'
+      responses:
+        '200':
+          description: The transaction set was successfully deleted.
+        '404':
+          description: A transaction set with the given key does not exist or is already deleted.
+        '409':
+          description: A transaction set with the given key could not be deleted.
+  /admin/transactions:
+    post:
+      summary: Create a transaction definition.
+      operationId: postTransactionDefinition
+      tags: [ 'Admin' ]
+      requestBody:
+        description: Transaction Definition to create.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransactionDefinitionCreateModel'
+      responses:
+        200:
+          description: The saved transaction definition post-save. This will include assigned IDs for newly created transaction definitions.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionDefinitionResponseModel'
+        409:
+            description: A transaction definition with the given key already exists.
+    get:
+      summary: Get list of transaction definitions with name matching a search string. Omitting search parameter will return all transaction definitions.
+      operationId: getTransactionDefinitions
+      tags: [ 'Admin' ]
+      parameters:
+        - in: query
+          name: name
+          description: Full or partial name to filter returned transaction definitions.
+          required: false
+          schema:
+            type: string
+            pattern: '^(?!\\s*$).+'
+        - $ref: "#/components/parameters/sortByTransactionDefinition"
+        - $ref: "#/components/parameters/sortOrder"
+        - $ref: "#/components/parameters/pageNumber"
+        - $ref: "#/components/parameters/pageSize"
+      responses:
+        '200':
+          description: Collection of transaction definition (paged).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagedTransactionDefinitionResponseModel'
+  /admin/transactions/{key}:
+    put:
+      summary: Update a transaction definition.
+      operationId: putTransactionDefinition
+      tags: [ 'Admin' ]
+      parameters:
+        - in: path
+          name: key
+          description: key of transaction definition to update
+          required: true
+          schema:
+            type: string
+            pattern: '^[a-zA-Z0-9]+$'
+      requestBody:
+        description: Transaction Definition.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransactionDefinitionUpdateModel'
+      responses:
+        200:
+          description: The saved transaction definition post-save. This will include assigned IDs for newly created transaction definitions.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionDefinitionResponseModel'
+        404:
+          description: A transaction definition with the given key does not exist.
+    get:
+      summary: Get a single transaction definition by Key.
+      operationId: getTransactionDefinition
+      tags: [ 'Admin' ]
+      parameters:
+        - in: path
+          name: key
+          description: key of transaction definition to retrieve
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The requested transaction definition.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionDefinitionResponseModel'
+        '404':
+          description: A transaction with the given key does not exist.
+  /admin/transactions/{transactionDefinitionKey}/forms/{key}:
+    put:
+      summary: Update a form configuration.
+      operationId: putFormConfiguration
+      tags: [ 'Admin' ]
+      parameters:
+        - in: path
+          name: transactionDefinitionKey
+          description: key of transaction definition owning the form to update
+          required: true
+          schema:
+            type: string
+            pattern: '^[a-zA-Z0-9]+$'
+        - in: path
+          name: key
+          description: key of form configuration to update
+          required: true
+          schema:
+            type: string
+            pattern: '^[a-zA-Z0-9]+$'
+      requestBody:
+        description: Form Configuration.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FormConfigurationUpdateModel'
+      responses:
+        200:
+          description: The saved form configuration post-save. This will include assigned IDs for newly created form configurations.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FormConfigurationResponseModel'
+    get:
+      summary: Get a single form configuration by Key.
+      operationId: getFormConfiguration
+      tags: [ 'Admin' ]
+      parameters:
+        - in: path
+          name: transactionDefinitionKey
+          description: key of transaction definition owning the form to retrieve
+          required: true
+          schema:
+            type: string
+            pattern: '^[a-zA-Z0-9]+$'
+        - in: path
+          name: key
+          description: key of form configuration to retrieve
+          required: true
+          schema:
+            type: string
+            pattern: '^[a-zA-Z0-9]+$'
+      responses:
+        '200':
+          description: The requested form configuration.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FormConfigurationResponseModel'
+        '404':
+          description: A transaction with the given key does not exist.
+  /admin/transactions/{transactionDefinitionKey}/forms:
+    post:
+      summary: Create a form configuration.
+      operationId: postFormConfiguration
+      tags: [ 'Admin' ]
+      parameters:
+        - in: path
+          name: transactionDefinitionKey
+          description: key of transaction definition owning the form to create or update
+          required: true
+          schema:
+            type: string
+            pattern: '^[a-zA-Z0-9]+$'
+      requestBody:
+        description: Form Configuration.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FormConfigurationCreateModel'
+      responses:
+        200:
+          description: The saved form configuration post-save. This will include assigned IDs for newly created form configurations.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FormConfigurationResponseModel'
+        409:
+            description: A form configuration with the given key already exists.
+    get:
+      summary: Get all form configurations for a specific transaction
+      operationId: getListOfFormConfigurations
+      tags: [ 'Admin' ]
+      parameters:
+        - in: path
+          name: transactionDefinitionKey
+          description: key of transaction definition owning the forms to retrieve
+          required: true
+          schema:
+            type: string
+            pattern: '^[a-zA-Z0-9]+$'
+      responses:
+        '200':
+          description: The requested form configurations.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FormConfigurationResponseModel'
+        '404':
+          description: A transaction with the given key does not exist.
+  /admin/transactions/linktype:
+    post:
+      summary: Create or update a transaction link type which can be assigned to a transaction definition.
+      operationId: postTransactionLinkType
+      tags: [ 'Admin' ]
+      requestBody:
+        description: The transaction link type to create.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransactionLinkTypeModel'
+      responses:
+        201:
+          description: The created transaction link type.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionLinkTypeModel'
+  /admin/transactions/linktypes:
+    get:
+      summary: Get list of transaction link types.
+      operationId: getTransactionLinkTypes
+      tags: [ 'Admin' ]
+      responses:
+        200:
+          description: List of created transaction link types.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TransactionLinkTypeModel'
+  /admin/transactions/allowedlink:
+    post:
+      summary: Create an allowed link rule for a transaction definition.
+      operationId: postAllowedLinkToDefinition
+      tags: [ 'Admin' ]
+      requestBody:
+        description: The link type to allow on a transaction definition.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AllowedLinkCreationRequest'
+      responses:
+        201:
+          description: The created transaction link type.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AllowedLinkModel'
+  /admin/transactions/allowedlinks/{key}:
+    get:
+      summary: Get list of allowed links for a transaction definition by transaction definition key.
+      operationId: getTransactionDefinitionAllowedLinksByKey
+      tags: [ 'Admin' ]
+      parameters:
+        - in: path
+          name: key
+          description: The transaction definition key to search on.
+          required: true
+          schema:
+            type: string
+            pattern: '^[a-zA-Z0-9]+$'
+      responses:
+        200:
+          description: Collection of allowed links for a transaction definition.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AllowedLinkModel'
+  /admin/consistency:
+    get:
+      summary: Run a consistency check for all camunda objects
+      operationId: consistencyCheck
+      tags: [ 'Admin' ]
+      responses:
+        200:
+          description: A list of issues (if any).
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+  /admin/configuration/export:
+    get:
+      summary: Exports the form config definitions, transaction definitions, schemas, and Camunda diagrams
+      operationId: exportConfiguration
+      tags: [ 'Admin' ]
+      responses:
+        200:
+          description: A zip file containing a configuration for the form config definitions, transaction definitions, schemas, and Camunda diagrams
+          content:
+            application/zip:
+              schema:
+                type: string
+                format: binary
+  /transactions:
+    post:
+      summary: Create a new transaction instance.
+      operationId: postTransaction
+      tags: [ 'Transactions' ]
+      parameters:
+        - in: header
+          name: Authorization
+          schema:
+            type: string
+      requestBody:
+        description: Transaction Creation Request.
+
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransactionCreationRequest'
+      responses:
+        200:
+          description: The posted transaction  post-save. This will include assigned IDs for newly created transaction.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionModel'
+    get:
+      summary: Get filtered list of transactions
+      operationId: getTransactions
+      tags: [ 'Transactions' ]
+      parameters:
+        - in: query
+          name: transactionDefinitionKey
+          description: Key of the transaction definition to fetch transactions for.
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: transactionDefinitionSetKey
+          description: Key of the transaction definition set to fetch transactions for.
+          required: false
+          schema:
+            type: string
+            pattern: '^[a-zA-Z0-9]+$'
+        - in: query
+          name: category
+          description: category key to filter transactions by.
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: startDate
+          description: start date to filter transactions by.
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: endDate
+          description: end date to filter transactions by.
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: priority
+          description: priority to filter transactions by.
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+        - in: query
+          name: status
+          description: status to filter transactions by.
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+        - in: query
+          name: assignedTo
+          description: assigned user to filter transactions by.
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+        - in: query
+          name: subjectUserId
+          description: A subject user id to fetch transactions for.
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: externalId
+          description: A external id to fetch transactions for.
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: assignedToMe
+          description: filter transactions assigned only to yourself (will ignore the value of assignedTo if true).
+          required: false
+          schema:
+            type: boolean
+        - $ref: "#/components/parameters/sortByTransaction"
+        - $ref: "#/components/parameters/sortOrder"
+        - $ref: "#/components/parameters/pageNumber"
+        - $ref: "#/components/parameters/pageSize"
+      responses:
+        '200':
+          description: Collection of transaction matching filter criteria.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagedTransactionModel'
+        "403":
+          description: "You are unauthorized to make this request"
+        "404":
+          description: "Resource not found"
+  /transactions/{id}:
+    get:
+      summary: Get a single transaction by ID.
+      operationId: getTransaction
+      tags: [ 'Transactions' ]
+      parameters:
+        - in: path
+          name: id
+          description: ID of transaction to retrieve
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: The requested transaction.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionModel'
+        '404':
+          description: A transaction with the given ID does not exist.
+    put:
+      summary: Update an existing transaction.
+      operationId: updateTransaction
+      tags: [ 'Transactions' ]
+      parameters:
+        - in: path
+          name: id
+          description: ID of transaction to update
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: taskId
+          description: (Optional) ID of workflow task to post data to as part of this update
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: completeTask
+          description: (Optional) Flag to determine if a task in the workflow should be completed as part of this update
+          required: false
+          schema:
+            type: boolean
+            default: false
+        - in: query
+          name: formStepKey
+          description: Flag to determine if a task in the workflow should be completed as part of this update
+          required: false
+          schema:
+            type: string
+            pattern: '^[a-zA-Z0-9]+$'
+      requestBody:
+        description: Transaction Data to update.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransactionUpdateRequest'
+      responses:
+        '200':
+          description: The updated transaction.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionModel'
+  /transactions/{id}/notes:
+    get:
+      summary: Get notes for a transaction.
+      operationId: getTransactionNotes
+      tags: [ 'Note' ]
+      parameters:
+        - in: path
+          name: id
+          description: ID of transaction to retrieve notes for
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: startDate
+          description: start date to filter transactions by.
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: endDate
+          description: end date to filter transactions by.
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: type
+          description: Name of the note type.
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: includeDeleted
+          description: Flag to determine if transaction notes marked as deleted should be retrieved.
+          required: false
+          schema:
+            type: boolean
+            default: false
+        - $ref: "#/components/parameters/sortByNote"
+        - $ref: "#/components/parameters/sortOrder"
+        - $ref: "#/components/parameters/pageNumber"
+        - $ref: "#/components/parameters/pageSize"
+      responses:
+        '200':
+          description: The requested notes.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagedTransactionNoteModel'
+        '404':
+          description: A transaction with the given ID does not exist.
+    post:
+      summary: Create a new note for a transaction.
+      operationId: postTransactionNote
+      tags: [ 'Note' ]
+      parameters:
+        - in: path
+          name: id
+          description: ID of transaction to add note to
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        description: Note to add to transaction.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NoteCreationModelRequest'
+      responses:
+        '200':
+          description: The posted note.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NoteModelResponse'
+  /transactions/{id}/notes/{noteId}:
+    delete:
+      summary: Soft deletes a transaction note.
+      operationId: softDeleteTransactionNote
+      tags: [ 'Note' ]
+      parameters:
+        - in: path
+          name: id
+          description: ID of transaction the note belongs to
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: path
+          name: noteId
+          description: ID of note to update
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: The transaction note was successfully deleted.
+        '404':
+          description: A note with the given ID does not exist or is already deleted.
+    get:
+      summary: Get a single note by transaction ID and note id.
+      operationId: getTransactionNote
+      tags: [ 'Note' ]
+      parameters:
+        - in: path
+          name: id
+          description: ID of transaction to retrieve note for
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: path
+          name: noteId
+          description: ID of note to retrieve
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: The requested note.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NoteModelResponse'
+        '404':
+          description: A note with the given ID does not exist.
+    put:
+      summary: Update a single note by transaction ID and note id.
+      operationId: updateTransactionNote
+      tags: [ 'Note' ]
+      parameters:
+        - in: path
+          name: id
+          description: ID of transaction the note belongs to
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: path
+          name: noteId
+          description: ID of note to update
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        description: Note to data to update.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NoteUpdateModelRequest'
+      responses:
+        '200':
+          description: The updated note.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NoteModelResponse'
+        '404':
+          description: A note with the given ID does not exist.
+  /transactions/{transactionId}/documents/{documentId}:
+    put:
+      summary: Creates or updates a Customer Provided Document.
+      operationId: updateCustomerProvidedDocument
+      tags: [ 'Transactions' ]
+      parameters:
+        - in: path
+          name: transactionId
+          description: Transaction id to which the document is linked to.
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: documentId
+          description: Customer Provided Document id.
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: Customer Provided to be updated.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CustomerProvidedDocumentModelRequest'
+      responses:
+        '200':
+          description: The updated transaction.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerProvidedDocumentModelResponse'
+        '400':
+          description: "Invalid request body"
+        '401':
+          description: "You are unauthorized to make this request"
+        '404':
+          description: "Transaction or Customer Provided Document not found"
+  /transactions/{id}/active-forms:
+    get:
+      summary: Get the active forms for a given transaction, or a 'fallback' form if no active forms are found.
+      operationId: getTransactionActiveForms
+      tags: [ 'Transactions' ]
+      parameters:
+        - in: path
+          name: id
+          description: ID of transaction to retrieve forms for
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: context
+          description: Optional user interface context for form selection.
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: A map of active task names to their forms.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  $ref: "#/components/schemas/FormConfigurationRenderModel"
+        '404':
+          description: A transaction with the given ID does not exist.
+  /my-transactions:
+    get:
+      summary: Get all transactions created by or on behalf of the authenticated user.
+      operationId: getTransactionsForAuthenticatedUser
+      tags: [ 'MyTransactions' ]
+      parameters:
+        - $ref: "#/components/parameters/sortByTransaction"
+        - $ref: "#/components/parameters/sortOrder"
+        - $ref: "#/components/parameters/pageNumber"
+        - $ref: "#/components/parameters/pageSize"
+      responses:
+        '200':
+          description: The requested transactions.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagedTransactionModel'
+  /transactions/{id}/links/{toId}:
+    post:
+      summary: Create a link between two transactions
+      operationId: linkTransactions
+      tags: [ 'Transactions' ]
+      parameters:
+        - in: path
+          name: id
+          description: ID of the transaction to linking from.
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: path
+          name: toId
+          description: ID of the transaction to linking to.
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        description: The transaction link creation request.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransactionLinkModificationRequest'
+      responses:
+        201:
+          description: The created transaction link id
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionLinkModel'
+    delete:
+      summary: Delete an existing link between two transactions
+      operationId: deleteTransactionLink
+      tags: [ 'Transactions' ]
+      parameters:
+        - in: path
+          name: id
+          description: ID of the transaction to linking from.
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: path
+          name: toId
+          description: ID of the transaction to linking to.
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        description: The transaction link creation request.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransactionLinkModificationRequest'
+      responses:
+        200:
+          description: "successful operation"
+        403:
+          description: "You are unauthorized to make this request"
+        404:
+          description: "Resource not found"
+  /transactions/{id}/links:
+    get:
+      summary: Get the linked transactions for a given transaction id
+      operationId: getLinkedTransactionsById
+      tags: [ 'Transactions' ]
+      parameters:
+        - in: path
+          name: id
+          description: The transaction id to search on.
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        200:
+          description: The list of linked transactions.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LinkedTransaction'
+  /transactions/{id}/process-documents:
+    post:
+      summary: Initiate document processing
+      operationId: initiateDocumentProcessing
+      tags: [ 'Transactions' ]
+      parameters:
+        - in: path
+          name: id
+          description: ID of the transaction to which the documents belong.
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        description: The document processing request.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/initiateDocumentProcessingModelRequest'
+      responses:
+        200:
+          description: List of processor IDs requested.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/initiateDocumentProcessingModelResponse'
+  /transactions/statuses:
+    get:
+      summary: Get list of available statuses defined in Camunda workflow
+      operationId: getAvailableStatuses
+      tags: [ 'Transactions' ]
+      parameters:
+        - in: query
+          name: type
+          description: The type of statuses to retrieve (public or internal).  Default is public.
+          schema:
+            type: string
+            pattern: ^(public|internal)$
+        - in: query
+          name: category
+          description: (Optional) The transaction definition category to search for
+          schema:
+            type: string
+        - in: query
+          name: key
+          description: (Optional) The transaction definition key to search for
+          schema:
+            type: string
+      responses:
+        200:
+          description: The list of available statuses.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+  /transactions/statuses/count:
+    get:
+      summary: Get list of statuses with a count of how many transactions have each status
+      operationId: getTransactionCountByStatus
+      tags: [ 'Transactions' ]
+      parameters:
+        - in: query
+          name: transactionDefinitionKey
+          description: Key of the transaction definition to fetch transactions for.
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: transactionDefinitionSetKey
+          description: Key of the transaction definition set to fetch transactions for.
+          required: false
+          schema:
+            type: string
+            pattern: '^[a-zA-Z0-9]+$'
+        - in: query
+          name: category
+          description: category key to filter transactions by.
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: startDate
+          description: start date to filter transactions by.
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: endDate
+          description: end date to filter transactions by.
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: priority
+          description: priority to filter transactions by.
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+        - in: query
+          name: status
+          description: status to filter transactions by.
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+        - in: query
+          name: assignedTo
+          description: assigned user to filter transactions by.
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+        - in: query
+          name: assignedToMe
+          description: filter transactions assigned only to yourself (will ignore the value of assignedTo if true).
+          required: false
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Collection of transaction counts by status matching filter criteria.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TransactionCountByStatusModel'
+  /enumerations:
+    get:
+      summary: Get all enumerations from the system.
+      operationId: getEnumerations
+      tags: [ 'enums' ]
+      responses:
+        '200':
+          description: A map of enums to their values.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  $ref: '#/components/schemas/EnumerationResponseModel'
+  /enumerations/{enumerationId}:
+    get:
+      summary: Get a enumeration from a given id.
+      operationId: getEnumerationsById
+      tags: [ 'enums' ]
+      parameters:
+        - in: path
+          name: enumerationId
+          description: The enumeration id to search on.
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The requested enumerations.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnumerationResponseModel'
+
+components:
+  schemas:
+    DashboardCountsModel:
+      type: object
+      properties:
+        tabLabel:
+          type: string
+        count:
+          type: integer
+          format: int64
+    TransactionDefinitionSetDashboardResultModel:
+      allOf:
+        - $ref: '#/components/schemas/TransactionDefinitionSetDashboardRequestModel'
+        - type: object
+          properties:
+            transactionSet:
+              type: string
+            transactionDefinitionKeys:
+              type: array
+              items:
+                type: string
+                pattern: '^[a-zA-Z0-9]+$'
+    DashboardModel:
+      type: object
+      properties:
+        transactionSet:
+          type: string
+        dashboardLabel:
+          type: string
+        menuIcon:
+          type: string
+        transactionDefinitionKeys:
+          type: array
+          items:
+            type: string
+            pattern: '^[a-zA-Z0-9]+$'
+        columns:
+          type: array
+          items:
+            $ref: '#/components/schemas/DashboardColumnModel'
+        tabs:
+          type: array
+          items:
+            $ref: '#/components/schemas/DashboardTabModel'
+    DashboardColumnModel:
+      type: object
+      properties:
+        columnLabel:
+          type: string
+        attributePath:
+          type: string
+        sortable:
+          type: boolean
+        displayFormat:
+          type: string
+    DashboardTabModel:
+      type: object
+      properties:
+        tabLabel:
+          type: string
+        filter:
+          type: object
+          additionalProperties:
+            type: object
+    PagedWorkflowModel:
+      description: Paged response detailing a collection of workflows.
+      type: object
+      required:
+        - items
+        - pagingMetadata
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/WorkflowModel"
+        pagingMetadata:
+          $ref: "#/components/schemas/PagingMetadata"
+    WorkflowModel:
+      type: object
+      required:
+        - processDefinitionId
+        - processDefinitionKey
+        - name
+        - description
+      properties:
+        processDefinitionId:
+          type: string
+        processDefinitionKey:
+          type: string
+        name:
+          type: string
+          pattern: '^(?!\\s*$).+'
+        description:
+          type: string
+    TaskModel:
+      type: object
+      required:
+        - id
+        - name
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+          pattern: '^(?!\\s*$).+'
+    EntityModel:
+      type: object
+      required:
+        - schema
+        - data
+      properties:
+        id:
+          type: string
+          format: uuid
+        schema:
+          type: string
+        data:
+          type: object
+          additionalProperties: true
+    SchemaModel:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/SchemaCreateModel'
+        - required:
+            - id
+            - key
+            - name
+            - attributes
+            - computedAttributes
+        - properties:
+            id:
+              type: string
+              format: uuid
+            createdBy:
+              type: string
+            lastUpdatedBy:
+              type: string
+            createdTimestamp:
+              type: string
+              format: date-time
+            lastUpdatedTimestamp:
+              type: string
+              format: date-time
+    ParentSchemas:
+      type: object
+      properties:
+        parentSchemas:
+          type: array
+          items:
+            type: string
+    PagedSchemaModel:
+      description: Paged response detailing a collection of schemas.
+      type: object
+      required:
+        - items
+        - pagingMetadata
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/SchemaModel"
+        pagingMetadata:
+          $ref: "#/components/schemas/PagingMetadata"
+    SchemaUpdateModel:
+      type: object
+      required:
+        - name
+        - attributes
+      properties:
+        description:
+          type: string
+        name:
+          type: string
+          pattern: '^(?!\\s*$).+'
+        attributes:
+          type: array
+          items:
+            $ref: '#/components/schemas/AttributeDefinitionModel'
+        computedAttributes:
+          type: array
+          items:
+            $ref: '#/components/schemas/ComputedAttributeDefinitionModel'
+    SchemaCreateModel:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/SchemaUpdateModel'
+        - required:
+            - key
+        - properties:
+            key:
+              type: string
+              pattern: '^[a-zA-Z0-9]+$'
+    AttributeDefinitionModel:
+      type: object
+      required:
+        - name
+        - type
+        - attributeConfigurations
+      properties:
+        name:
+          type: string
+          pattern: '^(?!\\s*$).+'
+        type:
+          type: string
+        contentType:
+          type: string
+        entitySchema:
+          type: string
+        schema:
+          $ref: "#/components/schemas/SchemaModel"
+        attributeConfigurations:
+          type: array
+          items:
+            $ref: '#/components/schemas/AttributeConfigurationModel'
+    ComputedAttributeDefinitionModel:
+      type: object
+      required:
+        - name
+        - type
+        - expression
+      properties:
+        name:
+          type: string
+          pattern: '^(?!\\s*$).+'
+        type:
+          type: string
+        expression:
+          type: string
+    AttributeConfigurationModel:
+      type: object
+      properties:
+        type:
+          type: string
+      required:
+        - type
+      discriminator:
+        propertyName: "type"
+        mapping:
+          # Due to a bug with the OpenAPI generator, the discriminator values must be
+          # alphabetically before the simple class name of the types or else the API will
+          # return the simple class name as the discriminator value instead of the value,
+          # breaking clients ability to deserialize the response.
+          DocumentProcessor: '#/components/schemas/DocumentProcessorConfigurationModel'
+          DocumentClassifier: '#/components/schemas/DocumentClassifierConfigurationModel'
+    DocumentProcessorConfigurationModel:
+      allOf:
+        - $ref: '#/components/schemas/AttributeConfigurationModel'
+      type: object
+      properties:
+        processorId:
+          type: string
+      required:
+        - processorId
+    DocumentClassifierConfigurationModel:
+      allOf:
+        - $ref: '#/components/schemas/AttributeConfigurationModel'
+      type: object
+      properties:
+        classifierName:
+          type: string
+      required:
+        - classifierName
+    TransactionDefinitionUpdateModel:
+      type: object
+      required:
+        - name
+        - key
+        - processDefinitionKey
+        - schemaKey
+        - defaultStatus
+        - category
+      properties:
+        name:
+          type: string
+          pattern: '^(?!\\s*$).+'
+        description:
+          type: string
+        category:
+          type: string
+        processDefinitionKey:
+          type: string
+          pattern: '^[a-zA-Z0-9]+$'
+        schemaKey:
+          type: string
+          pattern: '^[a-zA-Z0-9]+$'
+        defaultStatus:
+          type: string
+          pattern: '^[a-zA-Z0-9]+$'
+        defaultFormConfigurationKey:
+          type: string
+        transactionDefinitionSetKey:
+          type: string
+          pattern: '^[a-zA-Z0-9]+$'
+        formConfigurationSelectionRules:
+          type: array
+          items:
+            $ref: '#/components/schemas/FormConfigurationSelectionRuleModel'
+    TransactionDefinitionCreateModel:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/TransactionDefinitionUpdateModel'
+        - properties:
+            key:
+              type: string
+              pattern: '^[a-zA-Z0-9]+$'
+    TransactionDefinitionResponseModel:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/TransactionDefinitionCreateModel'
+        - properties:
+            id:
+              type: string
+              format: uuid
+            key:
+              type: string
+              pattern: '^[a-zA-Z0-9]+$'
+            createdTimestamp:
+              type: string
+              format: date-time
+            lastUpdatedTimestamp:
+              type: string
+              format: date-time
+    PagedTransactionDefinitionResponseModel:
+      description: Paged response detailing a collection of transaction definitions.
+      type: object
+      required:
+        - items
+        - pagingMetadata
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/TransactionDefinitionResponseModel"
+        pagingMetadata:
+          $ref: "#/components/schemas/PagingMetadata"
+    FormConfigurationSelectionRuleModel:
+      type: object
+      required:
+        - formConfigurationKey
+      properties:
+        task:
+          type: string
+        viewer:
+          type: string
+        context:
+          type: string
+        formConfigurationKey:
+          type: string
+          pattern: '^[a-zA-Z0-9]+$'
+    FormConfigurationRenderModel:
+      type: object
+      properties:
+        configurationSchema:
+          type: string
+          pattern: ^(formio)$
+        configuration:
+          type: object
+          additionalProperties: true
+    FormConfigurationUpdateModel:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/FormConfigurationRenderModel'
+        - properties:
+            name:
+              type: string
+              pattern: '^(?!\\s*$).+'
+            schemaKey:
+              type: string
+              pattern: '^[a-zA-Z0-9]+$'
+            description:
+              type: string
+    FormConfigurationCreateModel:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/FormConfigurationUpdateModel'
+        - properties:
+            key:
+              type: string
+              pattern: '^[a-zA-Z0-9]+$'
+    FormConfigurationResponseModel:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/FormConfigurationCreateModel'
+        - properties:
+            id:
+              type: string
+              format: uuid
+            transactionDefinitionKey:
+              type: string
+              pattern: '^[a-zA-Z0-9]+$'
+            key:
+              type: string
+              pattern: '^[a-zA-Z0-9]+$'
+            description:
+              type: string
+            createdBy:
+              type: string
+            lastUpdatedBy:
+              type: string
+            createdTimestamp:
+              type: string
+              format: date-time
+            lastUpdatedTimestamp:
+              type: string
+              format: date-time
+    TransactionCreationRequest:
+      type: object
+      required:
+        - transactionDefinitionKey
+      properties:
+        transactionDefinitionKey:
+          type: string
+          pattern: '^[a-zA-Z0-9]+$'
+    TransactionUpdateRequest:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: object
+          additionalProperties: true
+        action:
+          type: string
+        priority:
+          type: string
+        assignedTo:
+          type: string
+        context:
+          type: string
+    TransactionCountByStatusModel:
+      type: object
+      properties:
+        status:
+          type: string
+        count:
+          type: integer
+    EnumerationResponseModel:
+      type: array
+      items:
+        oneOf:
+          - $ref: '#/components/schemas/EnumsModel'
+          - $ref: '#/components/schemas/RankedEnumsModel'
+    EnumsModel:
+      type: object
+      properties:
+        label:
+          type: string
+        value:
+          type: string
+    RankedEnumsModel:
+      allOf:
+        - $ref: '#/components/schemas/EnumsModel'
+        - type: object
+          properties:
+            rank:
+              type: integer
+              description: 'Ranking of the enum'
+    PagedTransactionDefinitionSetModel:
+      description: Paged response detailing a collection of transaction definition sets.
+      type: object
+      required:
+        - items
+        - pagingMetadata
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/TransactionDefinitionSetResponseModel"
+        pagingMetadata:
+          $ref: "#/components/schemas/PagingMetadata"
+    PagedTransactionModel:
+      description: Paged response detailing a collection of transactions.
+      type: object
+      required:
+        - items
+        - pagingMetadata
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/TransactionModel"
+        pagingMetadata:
+          $ref: "#/components/schemas/PagingMetadata"
+    PagedTransactionNoteModel:
+      description: Paged response detailing a collection of transaction notes.
+      type: object
+      required:
+        - items
+        - pagingMetadata
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/NoteModelResponse"
+        pagingMetadata:
+          $ref: "#/components/schemas/PagingMetadata"
+    TransactionDefinitionSetUpdateModel:
+      type: object
+      properties:
+        workflow:
+          type: string
+        dashboardConfiguration:
+          $ref: '#/components/schemas/TransactionDefinitionSetDashboardRequestModel'
+        constraints:
+          type: array
+          items:
+            $ref: '#/components/schemas/TransactionDefinitionSetConstraintModel'
+    TransactionDefinitionSetCreateModel:
+      allOf:
+        - $ref: '#/components/schemas/TransactionDefinitionSetUpdateModel'
+        - type: object
+          properties:
+            key:
+              type: string
+              pattern: '^[a-zA-Z0-9]+$'
+    TransactionDefinitionSetResponseModel:
+      allOf:
+        - $ref: '#/components/schemas/TransactionDefinitionSetCreateModel'
+        - type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+            createdBy:
+              type: string
+            lastUpdatedBy:
+              type: string
+            createdTimestamp:
+              type: string
+              format: date-time
+            lastUpdatedTimestamp:
+              type: string
+              format: date-time
+    TransactionDefinitionSetDashboardRequestModel:
+      type: object
+      properties:
+        dashboardLabel:
+          type: string
+        menuIcon:
+          type: string
+        columns:
+          type: array
+          items:
+            $ref: '#/components/schemas/DashboardColumnModel'
+        tabs:
+          type: array
+          items:
+            $ref: '#/components/schemas/DashboardTabModel'
+    TransactionDefinitionSetConstraintModel:
+      type: object
+      properties:
+        path:
+          type: string
+        type:
+          type: string
+        contentType:
+          type: string
+    TransactionModel:
+      type: object
+      required:
+        - data
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          type: string
+        priority:
+          type: string
+        district:
+          type: string
+        transactionDefinitionId:
+          type: string
+          format: uuid
+        transactionDefinitionKey:
+          type: string
+          pattern: '^[a-zA-Z0-9]+$'
+        transactionDefinitionName:
+          type: string
+        externalId:
+          type: string
+        processInstanceId:
+          type: string
+        createdBy:
+          type: string
+        lastUpdatedBy:
+          type: string
+        assignedTo:
+          type: string
+        subjectUserId:
+          type: string
+        createdTimestamp:
+          type: string
+          format: date-time
+        lastUpdatedTimestamp:
+          type: string
+          format: date-time
+        submittedOn:
+          type: string
+          format: date-time
+        data:
+          type: object
+          additionalProperties: true
+        isComplete:
+          type: boolean
+        customerProvidedDocuments:
+          type: array
+          items:
+            $ref: '#/components/schemas/CustomerProvidedDocumentModelResponse'
+        activeTasks:
+          type: array
+          items:
+            $ref: '#/components/schemas/WorkflowTaskModel'
+    WorkflowTaskModel:
+      type: object
+      required:
+        - key
+        - name
+      properties:
+        key:
+          type: string
+          pattern: '^[a-zA-Z0-9]+$'
+        name:
+          type: string
+          pattern: '^(?!\\s*$).+'
+        actions:
+          type: array
+          items:
+            $ref: '#/components/schemas/WorkflowActionModel'
+    WorkflowActionModel:
+      type: object
+      required:
+        - key
+        - uiLabel
+      properties:
+        key:
+          type: string
+          pattern: '^[a-zA-Z0-9]+$'
+        uiLabel:
+          type: string
+        uiClass:
+          type: string
+        modalContext:
+          type: string
+    TransactionLinkTypeModel:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          pattern: '^(?!\\s*$).+'
+        fromDescription:
+          type: string
+        toDescription:
+          type: string
+    NoteUpdateModelRequest:
+      type: object
+      properties:
+        title:
+          type: string
+        body:
+          type: string
+        type:
+          $ref: '#/components/schemas/NoteTypeModel'
+        documents:
+          type: array
+          items:
+            type: string
+            format: uuid
+    NoteCreationModelRequest:
+      allOf:
+        - $ref: '#/components/schemas/NoteUpdateModelRequest'
+        - type: object
+          required:
+            - body
+            - type
+            - title
+    NoteModelResponse:
+      allOf:
+        - $ref: '#/components/schemas/NoteUpdateModelRequest'
+        - type: object
+          required:
+            - body
+          properties:
+            type:
+              $ref: '#/components/schemas/NoteTypeModel'
+            id:
+              type: string
+              format: uuid
+            createdBy:
+              type: string
+            lastUpdatedBy:
+              type: string
+            createdTimestamp:
+              type: string
+              format: date-time
+            lastUpdatedTimestamp:
+              type: string
+              format: date-time
+            deleted:
+              type: boolean
+            deletedOn:
+              type: string
+              format: date-time
+    NoteTypeModel:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          pattern: '^(?!\\s*$).+'
+    AllowedLinkModel:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        transactionDefinitionKey:
+          type: string
+          pattern: '^[a-zA-Z0-9]+$'
+        transactionLinkType:
+          $ref: '#/components/schemas/TransactionLinkTypeModel'
+    AllowedLinkCreationRequest:
+      type: object
+      properties:
+        transactionDefinitionKey:
+          type: string
+          pattern: '^[a-zA-Z0-9]+$'
+        transactionLinkTypeId:
+          type: string
+          format: uuid
+    TransactionLinkModel:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        fromTransactionId:
+          type: string
+          format: uuid
+        toTransactionId:
+          type: string
+          format: uuid
+        transactionLinkType:
+          $ref: '#/components/schemas/TransactionLinkTypeModel'
+    TransactionLinkModificationRequest:
+      type: object
+      properties:
+        transactionLinkTypeId:
+          type: string
+          format: uuid
+    LinkedTransaction:
+      type: object
+      properties:
+        description:
+          type: string
+        linkedTransactionId:
+          type: string
+          format: uuid
+    SchemaExportModel:
+      type: object
+      properties:
+        id:
+          type: string
+        key:
+          type: string
+          pattern: '^[a-zA-Z0-9]+$'
+        name:
+          type: string
+          pattern: '^(?!\\s*$).+'
+        attributes:
+          type: array
+          items:
+            $ref: '#/components/schemas/SchemaAttributeModel'
+        computedAttributes:
+          type: array
+          items:
+            $ref: '#/components/schemas/SchemaComputedAttributeModel'
+    SchemaAttributeModel:
+      type: object
+      properties:
+        name:
+          type: string
+          pattern: '^(?!\\s*$).+'
+        type:
+          type: string
+        contentType:
+          type: string
+        entitySchema:
+          type: string
+        attributeConfigurations:
+          type: array
+          items:
+            $ref: '#/components/schemas/AttributeConfigurationModel'
+    SchemaComputedAttributeModel:
+      type: object
+      properties:
+        name:
+          type: string
+          pattern: '^(?!\\s*$).+'
+        type:
+          type: string
+        expression:
+          type: string
+    TransactionDefinitionExportModel:
+      type: object
+      properties:
+        id:
+          type: string
+        key:
+          type: string
+          pattern: '^[a-zA-Z0-9]+$'
+        name:
+          type: string
+          pattern: '^(?!\\s*$).+'
+        processDefinitionKey:
+          type: string
+        schema:
+          type: string
+        defaultStatus:
+          type: string
+        category:
+          type: string
+        defaultFormConfigurationKey:
+          type: string
+          pattern: '^[a-zA-Z0-9]+$'
+    FormConfigurationExportModel:
+      type: object
+      properties:
+        id:
+          type: string
+        transactionDefinitionKey:
+          type: string
+          pattern: '^[a-zA-Z0-9]+$'
+        formConfigurationKey:
+          type: string
+        name:
+          type: string
+          pattern: '^(?!\\s*$).+'
+        schemaKey:
+          type: string
+          pattern: '^[a-zA-Z0-9]+$'
+        configurationSchema:
+          type: string
+        configuration:
+          type: object
+          additionalProperties: true
+        createdBy:
+          type: string
+        lastUpdatedBy:
+          type: string
+        createdTimestamp:
+          type: string
+        lastUpdatedTimestamp:
+          type: string
+    CustomerProvidedDocumentModelRequest:
+      type: object
+      properties:
+        reviewStatus:
+          type: string
+          pattern: ^(NEW|ACCEPTED|REJECTED)$
+        rejectionReasons:
+          type: array
+          items:
+            type: string
+            pattern: ^(POOR_QUALITY|INCORRECT_TYPE|DOES_NOT_SATISFY_REQUIREMENTS|SUSPECTED_FRAUD)$
+    CustomerProvidedDocumentModelResponse:
+      type: object
+      required:
+        - id
+        - reviewStatus
+        - transaction
+        - dataPath
+        - active
+        - reviewedBy
+        - reviewedOn
+      properties:
+        id:
+          type: string
+          format: uuid
+        reviewStatus:
+          type: string
+          pattern: ^(NEW|ACCEPTED|REJECTED)$
+        rejectionReasons:
+          type: array
+          items:
+            type: string
+            pattern: ^(POOR_QUALITY|INCORRECT_TYPE|DOES_NOT_SATISFY_REQUIREMENTS|SUSPECTED_FRAUD)$
+        transaction:
+          type: string
+          format: uuid
+        dataPath:
+          type: string
+        active:
+          type: boolean
+        reviewedBy:
+          type: string
+        reviewedOn:
+          type: string
+          format: date-time
+    initiateDocumentProcessingModelRequest:
+      type: object
+      properties:
+        path:
+          type: string
+          pattern: '^(\w+(\.\w+)*)?$'
+        documents:
+          type: array
+          items:
+            type: string
+            format: uuid
+      required:
+        - path
+        - documents
+    initiateDocumentProcessingModelResponse:
+      type: object
+      properties:
+        processors:
+          type: array
+          items:
+            type: string
+    Error:
+      type: "object"
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string
+    PagingMetadata:
+      description: Paging metadata in accordance with https://datatracker.ietf.org/doc/html/rfc8977
+      type: object
+      properties:
+        totalCount:
+          type: integer
+          format: int64
+          minimum: 0
+        pageSize:
+          type: integer
+          minimum: 0
+          maximum: 200
+        pageNumber:
+          type: integer
+          minimum: 0
+        nextPage:
+          type: string
+    SortOrder:
+      type: string
+      default: ASC
+      pattern: ^(ASC|DESC)$
+    SortByTransaction:
+      type: string
+      default: createdTimestamp
+      pattern: ^(id|priority|district|createdTimestamp|lastUpdatedTimestamp|status|description)$
+    SortByTransactionDefinition:
+      type: string
+      default: createdTimestamp
+      pattern: ^(createdTimestamp|lastUpdatedTimestamp|name|key|category|status)$
+    SortByNote:
+      type: string
+      default: createdTimestamp
+      pattern: ^(createdTimestamp|type|createdBy)$
+    SortBySchema:
+      type: string
+      default: name
+      pattern: ^(createdTimestamp|lastUpdatedTimestamp|name|key|description)$
+  parameters:
+    sortByTransaction:
+      in: query
+      name: sortBy
+      description: Field to sort by. createdTimestamp is chosen by default.
+      schema:
+        type: string
+        $ref: "#/components/schemas/SortByTransaction"
+    sortByNote:
+      in: query
+      name: sortBy
+      description: Field to sort by. createdTimestamp is chosen by default.
+      required: false
+      schema:
+        type: string
+        $ref: "#/components/schemas/SortByNote"
+    sortBySchema:
+      in: query
+      name: sortBy
+      description: "Field to sort by. 'name' is default (Also accepts: createdTimestamp|lastUpdatedTimestamp|key|description"
+      required: false
+      schema:
+        type: string
+        $ref: "#/components/schemas/SortBySchema"
+    sortByTransactionDefinition:
+      in: query
+      name: sortBy
+      description: Field to sort by. createdTimestamp is chosen by default.
+      required: false
+      schema:
+        type: string
+        $ref: "#/components/schemas/SortByTransactionDefinition"
+    sortOrder:
+      in: query
+      name: sortOrder
+      description: Determines direction for resulting sorting.
+      required: false
+      schema:
+        type: string
+        $ref: "#/components/schemas/SortOrder"
+    pageNumber:
+      in: query
+      name: pageNumber
+      description: the page number to show transactions for.
+      required: false
+      schema:
+        type: integer
+        minimum: 0
+        default: 0
+    pageSize:
+      in: query
+      name: pageSize
+      description: the number of transactions to retrieve.
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 200
+        default: 50
+

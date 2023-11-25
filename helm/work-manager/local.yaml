@@ -1,0 +1,32 @@
+environment: "local"
+
+postgres:
+  enabled: false
+  persistence:
+    size: 1Gi
+  env:
+    POSTGRES_DB: "local-work-manager-db"
+    POSTGRES_HOST: 'postgres-14-alpine'
+    POSTGRES_PASSWORD: "root"
+    POSTGRES_PORT: 5432
+    POSTGRES_USER: "root"
+
+net:
+  host: "api.devstream.test"
+
+env:
+  ALLOWED_ORIGINS: "http://localhost:4200, http://localhost:4201, http://public.devstream.test, http://agency.devstream.test"
+  DB_CONNECTION_URL: "jdbc:postgresql://work-manager-postgres:5432/local-work-manager-db"
+  DB_USERNAME: "root"
+  DB_PASSWORD: "root"
+  GCP_PROJECT_ID: "devstream-dev"
+  CERBOS_URI: "127.0.0.1:3592" #"unix:/sock/cerbos.sock"
+  SELF_SIGN_PUBLIC_KEY: "${sm://projects/devstream-dev/secrets/devstream-self-signed-token-public-key/versions/latest}"
+  SELF_SIGN_PRIVATE_KEY: "${sm://projects/devstream-dev/secrets/devstream-self-signed-token-private-key/versions/latest}"
+  USER_MANAGEMENT_BASE_URL: "http://user-management/um"
+  DOCUMENT_MANAGEMENT_BASE_URL: "http://devstream-document-management/dm"
+  AUDIT_SERVICE_BASE_URL: "http://audit-service/as"
+  NOTIFICATION_SERVICE_BASE_URL: "http://notification-service/ns"
+  TOKEN_PRIVATE_KEY_SECRET: "devstream-self-signed-token-private-key"
+  TOKEN_ISSUER: "devstream"
+  TOKEN_PRIVATE_KEY_VERSION: "latest"

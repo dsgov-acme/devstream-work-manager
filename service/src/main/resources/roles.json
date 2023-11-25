@@ -1,0 +1,23 @@
+{
+  "name": "work-manager",
+  "roles": [
+    {
+      "applicationRole": "wm:transaction-submitter",
+      "name": "Transaction Submitter",
+      "description": "Can create transactions. Can view & update transactions they submitted.",
+      "group": "work-manager"
+    },
+    {
+      "applicationRole": "wm:transaction-admin",
+      "name": "Transaction Admin",
+      "description": "Can create transactions. Can create & update all transactions.",
+      "group": "work-manager"
+    },
+    {
+      "applicationRole": "wm:transaction-config-admin",
+      "name": "Transaction Configuration Admin",
+      "description": "Can create & update transaction definitions, workflow configurations, dynamic schemas, and form, configurations.",
+      "group": "work-manager"
+    }
+  ]
+}
