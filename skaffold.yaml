@@ -6,10 +6,10 @@ profiles:
   - name: local
     build:
       googleCloudBuild:
-        projectId: devstream-services
+        projectId: devstream-shared-services-4179
         gradleImage: gradle:8.2.1-jdk17-alpine
       artifacts:
-        - image: us-east4-docker.pkg.dev/devstream-services/application/devstream-work-manager
+        - image: us-east4-docker.pkg.dev/devstream-shared-services-4179/application/devstream-work-manager
           jib:
             type: gradle
             project: service
@@ -23,8 +23,8 @@ profiles:
           chartPath: helm/work-manager
           # Ref: https://skaffold.dev/docs/deployers/helm/#sanitizing-the-artifact-name-from-invalid-go-template-characters
           setValueTemplates:
-            image.repository: "{{.IMAGE_REPO_us_east4_docker_pkg_dev_devstream_services_application_devstream_work_manager}}"
-            image.tag: "{{.IMAGE_TAG_us_east4_docker_pkg_dev_devstream_services_application_devstream_work_manager}}@{{.IMAGE_DIGEST_us_east4_docker_pkg_dev_devstream_services_application_devstream_work_manager}}"
+            image.repository: "{{.IMAGE_REPO_us_east4_docker_pkg_dev_devstream_shared_services_4179_application_devstream_work_manager}}"
+            image.tag: "{{.IMAGE_TAG_us_east4_docker_pkg_dev_devstream_shared_services_4179_application_devstream_work_manager}}@{{.IMAGE_DIGEST_us_east4_docker_pkg_dev_devstream_shared_services_4179_application_devstream_work_manager}}"
           setValues:
             environment: local
           valuesFiles:
@@ -76,10 +76,10 @@ profiles:
   - name: dev
     build:
       googleCloudBuild:
-        projectId: devstream-services
+        projectId: devstream-shared-services-4179
         gradleImage: gradle:8.2.1-jdk17-alpine
       artifacts:
-        - image: us-east4-docker.pkg.dev/devstream-services/application/devstream-work-manager
+        - image: us-east4-docker.pkg.dev/devstream-shared-services-4179/application/devstream-work-manager
           jib:
             type: gradle
             project: service
@@ -93,8 +93,8 @@ profiles:
           chartPath: helm/work-manager
           # Ref: https://skaffold.dev/docs/deployers/helm/#sanitizing-the-artifact-name-from-invalid-go-template-characters
           setValueTemplates:
-            image.repository: "{{.IMAGE_REPO_us_east4_docker_pkg_dev_devstream_services_application_devstream_work_manager}}"
-            image.tag: "{{.IMAGE_TAG_us_east4_docker_pkg_dev_devstream_services_application_devstream_work_manager}}@{{.IMAGE_DIGEST_us_east4_docker_pkg_dev_devstream_services_application_devstream_work_manager}}"
+            image.repository: "{{.IMAGE_REPO_us_east4_docker_pkg_dev_devstream_shared_services_4179_application_devstream_work_manager}}"
+            image.tag: "{{.IMAGE_TAG_us_east4_docker_pkg_dev_devstream_shared_services_4179_application_devstream_work_manager}}@{{.IMAGE_DIGEST_us_east4_docker_pkg_dev_devstream_shared_services_4179_application_devstream_work_manager}}"
           setValues:
             environment: dev
           valuesFiles:
@@ -103,10 +103,10 @@ profiles:
   - name: staging
     build:
       googleCloudBuild:
-        projectId: devstream-services
+        projectId: devstream-shared-services-4179
         gradleImage: gradle:8.2.1-jdk17-alpine
       artifacts:
-        - image: us-east4-docker.pkg.dev/devstream-services/application/devstream-work-manager
+        - image: us-east4-docker.pkg.dev/devstream-shared-services-4179/application/devstream-work-manager
           jib:
             type: gradle
             project: service
@@ -120,8 +120,8 @@ profiles:
           chartPath: helm/work-manager
           # Ref: https://skaffold.dev/docs/deployers/helm/#sanitizing-the-artifact-name-from-invalid-go-template-characters
           setValueTemplates:
-            image.repository: "{{.IMAGE_REPO_us_east4_docker_pkg_dev_devstream_services_application_devstream_work_manager}}"
-            image.tag: "{{.IMAGE_TAG_us_east4_docker_pkg_dev_devstream_services_application_devstream_work_manager}}@{{.IMAGE_DIGEST_us_east4_docker_pkg_dev_devstream_services_application_devstream_work_manager}}"
+            image.repository: "{{.IMAGE_REPO_us_east4_docker_pkg_dev_devstream_shared_services_4179_application_devstream_work_manager}}"
+            image.tag: "{{.IMAGE_TAG_us_east4_docker_pkg_dev_devstream_shared_services_4179_application_devstream_work_manager}}@{{.IMAGE_DIGEST_us_east4_docker_pkg_dev_devstream_shared_services_4179_application_devstream_work_manager}}"
           setValues:
             environment: staging
           valuesFiles:
@@ -130,10 +130,10 @@ profiles:
   - name: prod
     build:
       googleCloudBuild:
-        projectId: devstream-services
+        projectId: devstream-shared-services-4179
         gradleImage: gradle:8.2.1-jdk17-alpine
       artifacts:
-        - image: us-east4-docker.pkg.dev/devstream-services/application/devstream-work-manager
+        - image: us-east4-docker.pkg.dev/devstream-shared-services-4179/application/devstream-work-manager
           jib:
             type: gradle
             project: service
@@ -147,8 +147,8 @@ profiles:
           chartPath: helm/work-manager
           # Ref: https://skaffold.dev/docs/deployers/helm/#sanitizing-the-artifact-name-from-invalid-go-template-characters
           setValueTemplates:
-            image.repository: "{{.IMAGE_REPO_us_east4_docker_pkg_dev_devstream_services_application_devstream_work_manager}}"
-            image.tag: "{{.IMAGE_TAG_us_east4_docker_pkg_dev_devstream_services_application_devstream_work_manager}}@{{.IMAGE_DIGEST_us_east4_docker_pkg_dev_devstream_services_application_devstream_work_manager}}"
+            image.repository: "{{.IMAGE_REPO_us_east4_docker_pkg_dev_devstream_shared_services_4179_application_devstream_work_manager}}"
+            image.tag: "{{.IMAGE_TAG_us_east4_docker_pkg_dev_devstream_shared_services_4179_application_devstream_work_manager}}@{{.IMAGE_DIGEST_us_east4_docker_pkg_dev_devstream_shared_services_4179_application_devstream_work_manager}}"
           setValues:
             environment: prod
           valuesFiles:
