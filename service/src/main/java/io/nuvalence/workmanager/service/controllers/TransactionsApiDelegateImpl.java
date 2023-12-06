@@ -265,7 +265,10 @@ public class TransactionsApiDelegateImpl
         Page<TransactionModel> results =
                 transactionService
                         .getFilteredTransactions(filters)
-                        .map(mapper::transactionToTransactionModel);
+                        .map(t -> {
+                            t.setAssignedTo("Johnny");
+                            return mapper.transactionToTransactionModel(t);
+                        });
 
         return ResponseEntity.ok(generatePagedTransactionModel(results));
     }
