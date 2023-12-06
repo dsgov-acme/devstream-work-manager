@@ -1,0 +1,23 @@
+name: 'sandbox-work-manager-@{gitsha}'
+spec:
+  ttl:
+    duration: 2h
+  labels:
+    app: devstream-work-manager
+    git_sha: '@{gitsha}'
+  description: Sandbox to test changes to work-manager app
+  cluster: devstream-dev-cluster
+  forks:
+  - forkOf:
+      kind: Deployment
+      name: devstream-work-manager
+      namespace: devstream
+    customizations:
+      images:
+      - container: dev-devstream-work-manager
+        image: '@{image}'
+  endpoints:
+  - name: agency
+    host: agency.devstream.svc
+    port: 80
+    protocol: http
