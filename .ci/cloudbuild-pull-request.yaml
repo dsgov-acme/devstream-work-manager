@@ -3,106 +3,111 @@ logsBucket: "gs://${_ARTIFACT_BUCKET_NAME}/cloudbuild-logs/app-${_SERVICE_NAME}-
 options:
   machineType: 'E2_HIGHCPU_8'
 steps:
-  - id: 'Gradle Build && Set up ssh tunnel && Publish to SonarQube'
-    secretEnv: ['SONARQUBE_TOKEN']
-    name: "${_GAR_BUILDER_URL}/cloudbuild-jdk17"
-    entrypoint: bash
-    args:
-      - '-c'
-      - |
-        SONAR_HOST=$(gcloud compute instances list --filter 'name~sonarqube' --format 'value(name)')
-        SONAR_ZONE=$(gcloud compute instances list --filter 'name~sonarqube' --format 'value(zone)')
-        gcloud compute ssh sonarqube@$$SONAR_HOST --zone $$SONAR_ZONE
-        gcloud compute ssh sonarqube@$$SONAR_HOST  \
-          --zone $$SONAR_ZONE \
-          --tunnel-through-iap \
-          --project $PROJECT_ID \
-          -- -NL 9000:localhost:9000 &
-        PID=$?
-        ELAPSED=0
-        TIMEOUT=10
-        echo "Establishing tunnel..."
-        until curl -s http://localhost:9000
-          do
-          sleep 1
-          if (( ELAPSED > TIMEOUT ))
-            then
-            echo "establishing tunnel timed out. exiting."
-            kill $$PID
-            exit 1
-          fi
-          ELAPSED=$(( ELAPSED + 1 ))
-        done
-        echo "Tunnel has been established"
-        ./gradlew \
-            -Dsonar.login="$$SONARQUBE_TOKEN" \
-            -Dsonar.projectKey=${REPO_NAME} \
-            -Dsonar.projectName=${REPO_NAME} \
-            -Dsonar.host.url=http://localhost:9000 \
-            -Dsonar.branch.name=${BRANCH_NAME} \
-            -Dsonar.qualitygate.wait=true \
-             clean build jacocoTestReport sonar
-        EXIT=$?
-        echo "Build exited with status code $$EXIT"
-    
-        kill $$PID
-       
-        ## Fail code needs to be the last step in the ID.
-        ## Moving an escape check to the end of the ID.
-        
-        if [[ $$EXIT > 0 ]]; then
-          exit 1
-        fi
+  # - id: 'Gradle Build && Set up ssh tunnel && Publish to SonarQube'
+  #   secretEnv: ['SONARQUBE_TOKEN']
+  #   name: "${_GAR_BUILDER_URL}/cloudbuild-jdk17"
+  #   entrypoint: bash
+  #   args:
+  #     - '-c'
+  #     - |
+  #       SONAR_HOST=$(gcloud compute instances list --filter 'name~sonarqube' --format 'value(name)')
+  #       SONAR_ZONE=$(gcloud compute instances list --filter 'name~sonarqube' --format 'value(zone)')
+  #       gcloud compute ssh sonarqube@$$SONAR_HOST --zone $$SONAR_ZONE
+  #       gcloud compute ssh sonarqube@$$SONAR_HOST  \
+  #         --zone $$SONAR_ZONE \
+  #         --tunnel-through-iap \
+  #         --project $PROJECT_ID \
+  #         -- -NL 9000:localhost:9000 &
+  #       PID=$?
+  #       ELAPSED=0
+  #       TIMEOUT=10
+  #       echo "Establishing tunnel..."
+  #       until curl -s http://localhost:9000
+  #         do
+  #         sleep 1
+  #         if (( ELAPSED > TIMEOUT ))
+  #           then
+  #           echo "establishing tunnel timed out. exiting."
+  #           kill $$PID
+  #           exit 1
+  #         fi
+  #         ELAPSED=$(( ELAPSED + 1 ))
+  #       done
+  #       echo "Tunnel has been established"
+  #       ./gradlew \
+  #           -Dsonar.login="$$SONARQUBE_TOKEN" \
+  #           -Dsonar.projectKey=${REPO_NAME} \
+  #           -Dsonar.projectName=${REPO_NAME} \
+  #           -Dsonar.host.url=http://localhost:9000 \
+  #           -Dsonar.branch.name=${BRANCH_NAME} \
+  #           -Dsonar.qualitygate.wait=true \
+  #            clean build jacocoTestReport sonar
+  #       EXIT=$?
+  #       echo "Build exited with status code $$EXIT"
 
-  - id: 'Skaffold Render - Minikube'
+  #       kill $$PID
+
+  #       ## Fail code needs to be the last step in the ID.
+  #       ## Moving an escape check to the end of the ID.
+
+  #       if [[ $$EXIT > 0 ]]; then
+  #         exit 1
+  #       fi
+
+  - id: 'build'
     name: "${_GAR_BUILDER_URL}/helm:4.0.0"
     entrypoint: bash
     args:
       - "-c"
       - |
-        # Pass "--digest-source=tag" to avoid image resolution errors
-        # Ref: https://github.com/GoogleContainerTools/skaffold/issues/6941#issuecomment-988436514
-        skaffold render -p minikube --digest-source=tag
+        skaffold build -p dev --interactive=false --file-output=/workspace/artifacts.json
 
-  - id: 'Skaffold Render - Dev (GKE)'
-    name: "${_GAR_BUILDER_URL}/helm:4.0.0"
-    entrypoint: bash
+  - id: "Create Sandbox"
+    name: "gcr.io/cloud-builders/docker"
+    secretEnv: ['SIGNADOT_ORG', 'SIGNADOT_API_KEY']
+    waitFor:
+      - "build"
+    entrypoint: "bash"
     args:
       - "-c"
       - |
-        # Pass "--digest-source=tag" to avoid image resolution errors
-        # Ref: https://github.com/GoogleContainerTools/skaffold/issues/6941#issuecomment-988436514
-        skaffold render -p dev --digest-source=tag
+        docker run -i \
+            -e SIGNADOT_ORG="$$SIGNADOT_ORG" \
+            -e SIGNADOT_API_KEY="$$SIGNADOT_API_KEY" \
+            signadot/signadot-cli \
+            /signadot sandbox apply \
+            --set image=${_GAR_URL}/devstream-work-manager:latest \
+            --set gitsha=${SHORT_SHA} \
+            -f - \
+            -o json \
+            < .signadot/sandbox-work-manager-template.yaml \
+            > /workspace/sandbox-work-manager-template.json
 
-  - id: 'Upload Build reports to GCS'
-    name: 'gcr.io/cloud-builders/gcloud'
-    entrypoint: bash
-    args:
-      - '-c'
-      - |
-        echo "Uploading reports to GCS..."
-        gsutil -m cp -r service/build/reports/* gs://${_ARTIFACT_BUCKET_NAME}/${REPO_NAME}/${_PR_NUMBER}
-        echo "Reports uploaded!"
-
-  - id: 'Link Build Reports to GitHub'
+  - id: 'Publish preview environment details to Github'
     name: '${_GAR_BUILDER_URL}/gh'
+    secretEnv: ['GH_TOKEN']
     entrypoint: bash
+    waitFor:
+      - "Create Sandbox"
     args:
       - "-c"
       - |
-        export REPORT_URL=$(cat /workspace/report_url.txt)
+        apt install jq -y
+        export SANDBOX_ENDPOINT_URL="$(cat /workspace/sandbox-work-manager-template.json | jq -r '.endpoints[0].url')"
         gh auth login --with-token
         gh pr comment ${_PR_NUMBER} --body "
-        :sparkles: Build reports have been generated and can be accessed here:
-        :one: **Jacoco Report URL in GCS:** https://console.cloud.google.com/storage/browser/${_ARTIFACT_BUCKET_NAME}/${REPO_NAME}/${_PR_NUMBER}/jacoco/test/html/index.html
-        :two: **SonarQube:** ${_SONARQUBE_HOST}/dashboard?branch=${BRANCH_NAME}&id=${REPO_NAME}
+        :sparkles: Work-manager preview environment has been created and can be accessed here:
+        :one: **Sandbox Endpoint:** $$SANDBOX_ENDPOINT_URL
         "
-    secretEnv: ['GH_TOKEN']
 
 # This secret at this time is manually created from SonarQube's admin UI and saved to Google Secrets Manager
 availableSecrets:
   secretManager:
-  - versionName: projects/$PROJECT_ID/secrets/${_SONARQUBE_TOKEN_SECRET_NAME}/versions/latest
-    env: 'SONARQUBE_TOKEN'
+  # - versionName: projects/$PROJECT_ID/secrets/${_SONARQUBE_TOKEN_SECRET_NAME}/versions/latest
+  #   env: 'SONARQUBE_TOKEN'
   - versionName: projects/$PROJECT_ID/secrets/${_GITHUB_BOT_TOKEN_SECRET_NAME}/versions/latest
     env: 'GH_TOKEN'
+  - versionName: projects/$PROJECT_ID/secrets/${_SIGNADOT_ORG_SECRET_NAME}/versions/latest
+    env: 'SIGNADOT_ORG'
+  - versionName: projects/$PROJECT_ID/secrets/${_SIGNADOT_API_KEY_SECRET_NAME}/versions/latest
+    env: 'SIGNADOT_API_KEY'
